@@ -1,0 +1,2 @@
+dataset,hidden_channels,lr,dropout,epochs,hops,wd,Accuracy,std
+texas,64,0.01,0.35,10000,4,0.0005,88.65,5.1
