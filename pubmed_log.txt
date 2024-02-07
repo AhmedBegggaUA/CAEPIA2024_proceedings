@@ -1,0 +1,40 @@
+Running pubmed with 16 hidden channels and 3 hops and 0.01 learning rate and 0.2 dropout and 0.0005 weight decay
+Traceback (most recent call last):
+  File "/home/ahmedbegga/Escritorio/git/CAEPIA2024_proceedings/main.py", line 10, in <module>
+    from torch_geometric.datasets import Planetoid,WebKB,Actor,WikipediaNetwork, LINKXDataset
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch_geometric/__init__.py", line 1, in <module>
+    import torch_geometric.utils
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch_geometric/utils/__init__.py", line 3, in <module>
+    from .scatter import scatter, group_argsort
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch_geometric/utils/scatter.py", line 6, in <module>
+    import torch_geometric.typing
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch_geometric/typing.py", line 96, in <module>
+    import torch_sparse  # noqa
+    ^^^^^^^^^^^^^^^^^^^
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch_sparse/__init__.py", line 39, in <module>
+    from .storage import SparseStorage  # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch_sparse/storage.py", line 21, in <module>
+    @torch.jit.script
+     ^^^^^^^^^^^^^^^^
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch/jit/_script.py", line 1361, in script
+    _compile_and_register_class(obj, _rcb, qualified_name)
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch/jit/_recursive.py", line 59, in _compile_and_register_class
+    ast = get_jit_class_def(obj, obj.__name__)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch/jit/frontend.py", line 266, in get_jit_class_def
+    sourcelines, file_lineno, filename = get_source_lines_and_file(
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/site-packages/torch/_sources.py", line 23, in get_source_lines_and_file
+    sourcelines, file_lineno = inspect.getsourcelines(obj)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/inspect.py", line 1244, in getsourcelines
+    lines, lnum = findsource(object)
+                  ^^^^^^^^^^^^^^^^^^
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/inspect.py", line 1089, in findsource
+    tree = ast.parse(source)
+           ^^^^^^^^^^^^^^^^^
+  File "/home/ahmedbegga/miniconda3/envs/phd/lib/python3.11/ast.py", line 50, in parse
+    return compile(source, filename, mode, flags,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
