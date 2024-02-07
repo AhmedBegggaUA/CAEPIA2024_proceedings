@@ -57,14 +57,17 @@ if args.dataset == "texas":
     dataset = WebKB(root='./data',name='texas',transform=transform)
     data = dataset[0]
 elif args.dataset == "wisconsin":
-    dataset = WebKB(root='./data',name='wisconsin')
+    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = WebKB(root='./data',name='wisconsin',transform=transform)
     data = dataset[0]
 elif args.dataset == "actor":
-    dataset  = Actor(root='./data')
+    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset  = Actor(root='./data', transform=transform)
     dataset.name = "film"
     data = dataset[0]
 elif args.dataset == "cornell":
-    dataset = WebKB(root='./data',name='cornell')
+    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = WebKB(root='./data',name='cornell',transform=transform)
     data = dataset[0]
 elif args.dataset == "squirrel":
     transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
@@ -75,24 +78,24 @@ elif args.dataset == "chamaleon":
     dataset = WikipediaNetwork(root='./data',name='chameleon',transform=transform)
     data = dataset[0]
 elif args.dataset == "cora":
-    dataset = Planetoid(root='./data',name='cora')
+    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = Planetoid(root='./data',name='cora',transform=transform)
     data = dataset[0]
 elif args.dataset == "citeseer":
-    dataset = Planetoid(root='./data',name='citeseer')
+    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = Planetoid(root='./data',name='citeseer',transform=transform)
     data = dataset[0]
 elif args.dataset == "pubmed":
-    dataset = Planetoid(root='./data',name='pubmed')
+    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = Planetoid(root='./data',name='pubmed',transform=transform)
     data = dataset[0]
 init_edge_index = data.edge_index.clone()
-print("Computing the graphs...")
-print("Hops: init of ", data.edge_index.shape)
-print("Hops: init of ", data.edge_index)
-hops, attr = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,features=True)
+hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,features=True)
 hops.append(init_edge_index)
-attr.append(torch.ones(init_edge_index.shape[1]).to(args.cuda))
+#attr.append(torch.ones(init_edge_index.shape[1]).to(args.cuda))
 print("Done!")
 data.edge_index = hops
-data.edge_attr = attr
+#data.edge_attr = attr
 print()
 print(f'Dataset: {dataset}:')
 print('======================')
@@ -146,12 +149,12 @@ for i in range(10):
         acc_test = test(data,model,test_mask)
         if acc_test > test_acc:
             test_acc = acc_test
-        #print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
+        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
         if test_acc > acc_test:
             patience += 1
         else:
             patience = 0
-        if patience == 500:
+        if patience == 300:
             break
     print('===========================================================================================================')
     print('Test Accuracy: ',test_acc)

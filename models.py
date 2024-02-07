@@ -70,7 +70,7 @@ class MO_GNN_large(torch.nn.Module):
         # GCNConv over the original graph
         extra_conv = self.init_conv(x, edge_indexes[-1]).relu()
         extra_conv = F.dropout(extra_conv, p=0.5, training=self.training)
-        extra_conv = self.init_conv2(extra_conv, edge_indexes[-1], edge_attrs[-1]).relu() * mask[-1]
+        extra_conv = self.init_conv2(extra_conv, edge_indexes[-1]).relu() * mask[-1]
         # GCNConv over the n hops of graph
         embeddings = list()
         for i, conv in enumerate(self.convs):

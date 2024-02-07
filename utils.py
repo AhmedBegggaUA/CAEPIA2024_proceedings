@@ -36,9 +36,7 @@ def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
         with open('hops_'+name+'_k_'+str(k)+'.pkl', 'rb') as f:
             hops = pickle.load(f)
         print("Loaded hops from file")
-        with open('attributes_'+name+'_k_'+str(k)+'.pkl', 'rb') as f:
-            attributes = pickle.load(f)
-        return hops, attributes
+        return hops
     hops = list()
     attributes = list()
     N = edge_index.max().item() + 1
@@ -60,7 +58,7 @@ def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
     A_tilde_k = A_tilde.clone().to(device)
     hops.append(A_tilde_k.clone().coalesce().indices().to(device))
     # Ahora ponemos los pesos de cada una de las aristas
-    attributes.append(A_tilde_k.clone().coalesce().values().to(device))
+    #attributes.append(A_tilde_k.clone().coalesce().values().to(device))
     for i in range(k - 1):
         print("Computing k: ", i+1, " of ", k-1)
         if device == 'cpu':
@@ -71,13 +69,13 @@ def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
             print(torch.cuda.memory_allocated(device=device), "out of ", torch.cuda.max_memory_allocated(device=device))
         A_tilde_k = torch.sparse.mm(A_tilde_k, A_tilde)
         hops.append(A_tilde_k.clone().coalesce().indices().to(device))
-        attributes.append(A_tilde_k.clone().coalesce().values().to(device))
+    #    attributes.append(A_tilde_k.clone().coalesce().values().to(device))
     # Save the hops
     with open('./data/hops_'+name+'_k_'+str(k)+'.pkl', 'wb') as f:
         pickle.dump(hops, f)
-    with open('./data/attributes_'+name+'_k_'+str(k)+'.pkl', 'wb') as f:
-        pickle.dump(attributes, f)
-    return hops, attributes        
+    # with open('./data/attributes_'+name+'_k_'+str(k)+'.pkl', 'wb') as f:
+    #     pickle.dump(attributes, f)
+    return hops#, attributes        
         
     
 
@@ -97,7 +95,7 @@ def train(data,model,train_mask,optimizer,criterion):
     loss.backward()
     optimizer.step()
     return loss, acc
-
+@torch.no_grad()
 def val(data,model,val_mask):
     model.eval()
     # Get the output of the model
@@ -107,7 +105,7 @@ def val(data,model,val_mask):
     val_correct = pred[val_mask] == data.y[val_mask]
     acc = int(val_correct.sum()) / int(val_mask.sum())
     return acc
-
+@torch.no_grad()
 def test(data,model,test_mask):
     model.eval()
     # Get the output of the model
