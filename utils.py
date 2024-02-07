@@ -32,12 +32,15 @@ def khop_graphs(x,edge_index, k):
 
 def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
     # Checkas si ya existe el pickle
-    if os.path.exists('hops_'+name+'_k_'+str(k)+'.pkl'):
+    if os.path.exists('./data/hops_'+name+'_k_'+str(k)+'.pkl') and os.path.exists('./data/attributes_'+name+'_k_'+str(k)+'.pkl'):
         with open('hops_'+name+'_k_'+str(k)+'.pkl', 'rb') as f:
             hops = pickle.load(f)
         print("Loaded hops from file")
-        return hops
+        with open('attributes_'+name+'_k_'+str(k)+'.pkl', 'rb') as f:
+            attributes = pickle.load(f)
+        return hops, attributes
     hops = list()
+    attributes = list()
     N = edge_index.max().item() + 1
     # Create the adjacency matrix
     A = torch.sparse_coo_tensor(edge_index, torch.ones(edge_index.size(1)), (N, N)).to(device)
@@ -55,7 +58,9 @@ def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
     A_tilde = torch.sparse.mm(torch.sparse.mm(D_tilde, A), D_tilde)
     # Compute A_tilde^k
     A_tilde_k = A_tilde.clone().to(device)
-    hops.append(A_tilde_k.clone())
+    hops.append(A_tilde_k.clone().coalesce().indices().to(device))
+    # Ahora ponemos los pesos de cada una de las aristas
+    attributes.append(A_tilde_k.clone().coalesce().values().to(device))
     for i in range(k - 1):
         print("Computing k: ", i+1, " of ", k-1)
         if device == 'cpu':
@@ -65,11 +70,14 @@ def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
             # Mostramos cuanta memoria estamos usando
             print(torch.cuda.memory_allocated(device=device), "out of ", torch.cuda.max_memory_allocated(device=device))
         A_tilde_k = torch.sparse.mm(A_tilde_k, A_tilde)
-        hops.append(A_tilde_k.clone())
+        hops.append(A_tilde_k.clone().coalesce().indices().to(device))
+        attributes.append(A_tilde_k.clone().coalesce().values().to(device))
     # Save the hops
-    with open('hops_'+name+'_k_'+str(k)+'.pkl', 'wb') as f:
+    with open('./data/hops_'+name+'_k_'+str(k)+'.pkl', 'wb') as f:
         pickle.dump(hops, f)
-    return hops        
+    with open('./data/attributes_'+name+'_k_'+str(k)+'.pkl', 'wb') as f:
+        pickle.dump(attributes, f)
+    return hops, attributes        
         
     
 

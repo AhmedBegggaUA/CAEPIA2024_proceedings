@@ -85,10 +85,14 @@ elif args.dataset == "pubmed":
     data = dataset[0]
 init_edge_index = data.edge_index.clone()
 print("Computing the graphs...")
-hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,features=True)
+print("Hops: init of ", data.edge_index.shape)
+print("Hops: init of ", data.edge_index)
+hops, attr = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,features=True)
 hops.append(init_edge_index)
+attr.append(torch.ones(init_edge_index.shape[1]).to(args.cuda))
 print("Done!")
 data.edge_index = hops
+data.edge_attr = attr
 print()
 print(f'Dataset: {dataset}:')
 print('======================')
