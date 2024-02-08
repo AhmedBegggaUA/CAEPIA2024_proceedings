@@ -149,7 +149,7 @@ for i in range(10):
         acc_test = test(data,model,test_mask)
         if acc_test > test_acc:
             test_acc = acc_test
-        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
+#        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
         if test_acc > acc_test:
             patience += 1
         else:
