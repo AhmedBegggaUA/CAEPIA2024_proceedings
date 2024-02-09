@@ -70,24 +70,24 @@ elif args.dataset == "cornell":
     dataset = WebKB(root='./data',name='cornell',transform=transform)
     data = dataset[0]
 elif args.dataset == "squirrel":
-    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = WikipediaNetwork(root='./data',name='squirrel',transform=transform)
+#    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = WikipediaNetwork(root='./data',name='squirrel')#,transform=transform)
     data = dataset[0]    
 elif args.dataset == "chamaleon":
-    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = WikipediaNetwork(root='./data',name='chameleon',transform=transform)
+#    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = WikipediaNetwork(root='./data',name='chameleon')#,transform=transform)
     data = dataset[0]
 elif args.dataset == "cora":
-    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = Planetoid(root='./data',name='cora',transform=transform)
+#    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = Planetoid(root='./data',name='cora')#,transform=transform)
     data = dataset[0]
 elif args.dataset == "citeseer":
-    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = Planetoid(root='./data',name='citeseer',transform=transform)
+    #transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = Planetoid(root='./data',name='citeseer')#,transform=transform)
     data = dataset[0]
 elif args.dataset == "pubmed":
-    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = Planetoid(root='./data',name='pubmed',transform=transform)
+    #transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = Planetoid(root='./data',name='pubmed')#,transform=transform)
     data = dataset[0]
 init_edge_index = data.edge_index.clone()
 hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,features=True)
@@ -160,6 +160,7 @@ for i in range(10):
     print('Test Accuracy: ',test_acc)
     print('===========================================================================================================')
     results.append(test_acc)
+    del model
 print('===========================================================================================================')
 print('Report: ',np.mean(results)*100,'+-',np.std(results)*100)
 print('===========================================================================================================')
