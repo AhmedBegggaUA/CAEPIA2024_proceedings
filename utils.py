@@ -6,37 +6,9 @@ import psutil
 import os   
 # Usamos pickle para guardar los datos
 import pickle
-def khop_graphs(x,edge_index, k):
-    hops = []
-    # Get the number of nodes
-    N = edge_index.max().item() + 1
-    # Create the adjacency matrix
-    A = torch.zeros(N,N)
-    A[edge_index[0],edge_index[1]] = 1
-    # Add self loops
-    A = A + torch.eye(N)
-    # Degree matrix
-    degrees = torch.sum(A,dim=1)
-    D = torch.diag(degrees)
-    D_tilde = torch.pow(D,-0.5)
-    D_tilde[D_tilde == float('inf')] = 0
-    A_tilde = torch.matmul(torch.matmul(D_tilde,A),D_tilde)
-    # Compute A_tilde^k
-    A_tilde_k = A_tilde
-    hops.append(A_tilde_k.clone())
-    for i in range(k-1):
-        A_tilde_k = torch.sparse.mm(A_tilde_k,A_tilde)
-        hops.append(A_tilde_k.clone())
-    return hops
-
-
-def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
-    # Checkas si ya existe el pickle
-    if os.path.exists('./data/hops_'+name+'_k_'+str(k)+'.pkl') and os.path.exists('./data/attributes_'+name+'_k_'+str(k)+'.pkl'):
-        with open('hops_'+name+'_k_'+str(k)+'.pkl', 'rb') as f:
-            hops = pickle.load(f)
-        print("Loaded hops from file")
-        return hops
+from torch_geometric.seed import seed_everything as th_seed
+th_seed(12345)
+def khop_graphs_sparse(edge_index,k,device):
     hops = list()
     attributes = list()
     N = edge_index.max().item() + 1
@@ -70,19 +42,12 @@ def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
         A_tilde_k = torch.sparse.mm(A_tilde_k, A_tilde)
         hops.append(A_tilde_k.clone().coalesce().indices().to(device))
     #    attributes.append(A_tilde_k.clone().coalesce().values().to(device))
-    # Save the hops
-    with open('./data/hops_'+name+'_k_'+str(k)+'.pkl', 'wb') as f:
-        pickle.dump(hops, f)
-    # with open('./data/attributes_'+name+'_k_'+str(k)+'.pkl', 'wb') as f:
-    #     pickle.dump(attributes, f)
     return hops#, attributes        
         
-    
 
 
 def train(data,model,train_mask,optimizer,criterion):
     model.train()
-    optimizer.zero_grad()
     # Get the output of the model
     out = model(data.x, data.edge_index, data.edge_attr)
     # Compute the loss
@@ -94,17 +59,8 @@ def train(data,model,train_mask,optimizer,criterion):
     # Backpropagation
     loss.backward()
     optimizer.step()
+    optimizer.zero_grad()
     return loss, acc
-@torch.no_grad()
-def val(data,model,val_mask):
-    model.eval()
-    # Get the output of the model
-    out = model(data.x, data.edge_index, data.edge_attr)
-    # Compute the accuracy
-    pred = out.argmax(dim=1)
-    val_correct = pred[val_mask] == data.y[val_mask]
-    acc = int(val_correct.sum()) / int(val_mask.sum())
-    return acc
 @torch.no_grad()
 def test(data,model,test_mask):
     model.eval()

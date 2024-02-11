@@ -6,7 +6,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
-import pickle
+import time
 from torch_geometric.datasets import Planetoid,WebKB,Actor,WikipediaNetwork, LINKXDataset
 from torch_geometric.utils import to_dense_adj
 from torch_geometric.transforms import *
@@ -54,7 +54,7 @@ args.cuda = 'cpu' if not torch.cuda.is_available() else 'cuda:0'
 ################### Importing the dataset ###################################
 if args.dataset == "texas":
     transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = WebKB(root='./data',name='texas',transform=transform)
+    dataset = WebKB(root='./data',name='texas')#,transform=transform)
     data = dataset[0]
 elif args.dataset == "wisconsin":
     transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
@@ -90,7 +90,7 @@ elif args.dataset == "pubmed":
     dataset = Planetoid(root='./data',name='pubmed')#,transform=transform)
     data = dataset[0]
 init_edge_index = data.edge_index.clone()
-hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,features=True)
+hops = khop_graphs_sparse(data.edge_index, args.hops,args.cuda)
 hops.append(init_edge_index)
 #attr.append(torch.ones(init_edge_index.shape[1]).to(args.cuda))
 print("Done!")
@@ -107,20 +107,13 @@ print(data)
 print('===========================================================================================================')
 ################### CUDA ###################################
 device = torch.device(args.cuda)
-#device = 'cpu'
-#device = 'cpu' if not torch.cuda.is_available() else 'cuda:0'
-if torch.cuda.is_available() == False:
-    if torch.backends.mps.is_available():
-        mps_device = torch.device("mps")
-        device = torch.device("mps")
-        device = torch.device("cpu")
-    else:
-        print ("MPS device not found.")
 data = data.to(device)   
 print("Device: ",device)
 ################### Training the model in a supervised way ###################################
 results = []
 for i in range(10):
+    # Time per split
+    start = time.time()
     with open('splits/'+dataset.name+'_split_0.6_0.2_'+str(i)+'.npz', 'rb') as f:
                 splits = np.load(f)
                 train_mask = torch.tensor(splits['train_mask']).to(device)
@@ -129,38 +122,36 @@ for i in range(10):
     print('===========================================================================================================')
     print('Split: ',i)
     print('===========================================================================================================')
-    # model = MO_GNN(in_channels=data.x.shape[1],
-    #                 hidden_channels=args.hidden_channels,
-    #                 out_channels=dataset.num_classes,
-    #                 num_layers=args.n_layers,
-    #                 dropout=args.dropout).to(device)
     model = MO_GNN_large(in_channels=data.x.shape[1],
                     hidden_channels=args.hidden_channels,
                     out_channels=data.y.max().item()+1,
                     num_layers=args.hops,
-                    dropout=args.dropout).to(device)
+                    dropout=args.dropout,seed=i).to(device)
     criterion = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     test_acc = 0
     patience = 0
     for epoch in range(args.epochs):
         loss,acc_train = train(data,model,train_mask,optimizer,criterion)
-        acc_val = val(data,model,val_mask)
+        acc_val = test(data,model,val_mask)
         acc_test = test(data,model,test_mask)
         if acc_test > test_acc:
             test_acc = acc_test
-#        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
+        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
         if test_acc > acc_test:
             patience += 1
         else:
             patience = 0
-        if patience == 300:
+        if patience == 500:
             break
+    end = time.time()
+    del model
+    del optimizer
+    del criterion
     print('===========================================================================================================')
-    print('Test Accuracy: ',test_acc)
+    print('Test Accuracy: ',test_acc,'Time: ',end-start)
     print('===========================================================================================================')
     results.append(test_acc)
-    del model
 print('===========================================================================================================')
 print('Report: ',np.mean(results)*100,'+-',np.std(results)*100)
 print('===========================================================================================================')

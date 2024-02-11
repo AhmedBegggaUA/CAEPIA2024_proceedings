@@ -4,41 +4,10 @@ from torch_geometric.nn import GCNConv, GraphConv
 from torch.nn import Linear
 import torch.nn.functional as F
 import torch.nn as nn
-class MO_GNN(torch.nn.Module):
-    def __init__(self, in_channels,hidden_channels, out_channels,num_layers,dropout=0.2):
-        super(MO_GNN, self).__init__()
-        # seed
-        torch.manual_seed(12345)
-        # Create the layers
-        self.convs = torch.nn.ModuleList()
-        self.init_conv = GCNConv(in_channels, hidden_channels)
-        self.init_conv2 = GCNConv(hidden_channels, hidden_channels)
-        for i in range(num_layers):
-            self.convs.append(GraphConv(in_channels, hidden_channels))
-        # Final layer
-        self.fc1 = Linear((num_layers + 1)*hidden_channels, out_channels)
-        # Attention mechanism
-        self.att = nn.Parameter(torch.ones(num_layers + 1))
-        self.sm = nn.Softmax(dim=0)
-        # Dropout
-        self.dropout = dropout
-    def forward(self, x, edge_indexes, edge_attrs):
-        mask = self.sm(self.att)
-        extra_conv = self.init_conv(x, edge_indexes[-1]).relu()
-        extra_conv = F.dropout(extra_conv, p=0.5, training=self.training)
-        extra_conv = self.init_conv2(extra_conv, edge_indexes[-1]).relu() * mask[-1]
-        
-        embeddings = list()
-        for i, conv in enumerate(self.convs):
-            tmp_embedding = conv(x, edge_indexes[i], edge_attrs[i]).relu() * mask[i]
-            embeddings.append(tmp_embedding)
-        final_embedding = torch.cat(embeddings,dim=1)
-        final_embedding = torch.cat([final_embedding, extra_conv], dim=1)
-        z = F.dropout(final_embedding, p=self.dropout, training=self.training)
-        z = self.fc1(z).log_softmax(dim=-1)
-        return z
+from torch_geometric.seed import seed_everything as th_seed
+th_seed(12345)
 class MO_GNN_large(torch.nn.Module):
-    def __init__(self, in_channels,hidden_channels, out_channels,num_layers,dropout=0.2):
+    def __init__(self, in_channels,hidden_channels, out_channels,num_layers,dropout=0.2,seed=12345):
         super(MO_GNN_large, self).__init__()
         # seed
         torch.manual_seed(12345)
