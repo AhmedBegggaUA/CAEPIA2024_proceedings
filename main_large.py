@@ -71,12 +71,12 @@ elif args.dataset == "twitch-gamer":
 
 init_edge_index = data.edge_index.clone()
 print("Computing the graphs...")
-G_l,edge_l = khop_graphs_sparse(data.x,data.edge_index, args.hops, args.n_layers,args.dataset,"cpu",features=True)
+G_l = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,"cpu",features=True)
 G_l.append(init_edge_index)
-edge_l.append(torch.ones(init_edge_index.shape[1]))
+#edge_l.append(torch.ones(init_edge_index.shape[1]))
 print("Done!")
 data.edge_index = G_l
-data.edge_attr = edge_l
+#data.edge_attr = edge_l
 print()
 print(f'Dataset: {args.dataset}')
 print('======================')
@@ -116,7 +116,7 @@ for i in range(5):
     model = MO_GNN_large(in_channels=data.x.shape[1],
                     hidden_channels=args.hidden_channels,
                     out_channels=data.y.max().item()+1,
-                    num_layers=args.n_layers,
+                    num_layers=args.hops,
                     dropout=args.dropout).to(device)
     criterion = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)

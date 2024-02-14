@@ -70,8 +70,8 @@ elif args.dataset == "cornell":
     dataset = WebKB(root='./data',name='cornell',transform=transform)
     data = dataset[0]
 elif args.dataset == "squirrel":
-#    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = WikipediaNetwork(root='./data',name='squirrel')#,transform=transform)
+    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = WikipediaNetwork(root='./data',name='squirrel',transform=transform)
     data = dataset[0]    
 elif args.dataset == "chamaleon":
 #    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
@@ -86,11 +86,11 @@ elif args.dataset == "citeseer":
     dataset = Planetoid(root='./data',name='citeseer')#,transform=transform)
     data = dataset[0]
 elif args.dataset == "pubmed":
-    #transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+#    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
     dataset = Planetoid(root='./data',name='pubmed')#,transform=transform)
     data = dataset[0]
 init_edge_index = data.edge_index.clone()
-hops = khop_graphs_sparse(data.edge_index, args.hops,args.cuda)
+hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda)
 hops.append(init_edge_index)
 #attr.append(torch.ones(init_edge_index.shape[1]).to(args.cuda))
 print("Done!")
