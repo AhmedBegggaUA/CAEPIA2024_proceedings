@@ -90,7 +90,7 @@ elif args.dataset == "pubmed":
     dataset = Planetoid(root='./data',name='pubmed')#,transform=transform)
     data = dataset[0]
 init_edge_index = data.edge_index.clone()
-hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda)
+hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,regular=True)
 hops.append(init_edge_index)
 #attr.append(torch.ones(init_edge_index.shape[1]).to(args.cuda))
 print("Done!")

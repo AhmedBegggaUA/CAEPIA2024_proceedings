@@ -4,6 +4,7 @@ from torch_geometric.utils import degree
 import numpy as np
 import psutil
 import os   
+from sklearn.model_selection import train_test_split
 def khops_graphs_sampler(x, edge_index, k,device,features=True):
     similarity = torch.cdist(x, x, p=2)
     # Normalize between 0 and 1
@@ -37,10 +38,17 @@ def khops_graphs_sampler(x, edge_index, k,device,features=True):
     A_tilde = A_tilde.to_sparse()
     return 0
 
-def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
+def khop_graphs_sparse(x, edge_index, k,name,device,features=True, regular=False):
+    # Comprobamos si ya existe el fichero
+    if os.path.isfile('hops_'+name+'.pkl'):
+        import pickle
+        with open('hops_'+name+'.pkl', 'rb') as f:
+            hops = pickle.load(f)
+        return hops
     similarity = torch.cdist(x, x, p=2)
     # Normalize between 0 and 1
     similarity = (similarity - similarity.min()) / (similarity.max() - similarity.min())
+    similarity = similarity.to(device)
     hops = list()
     attributes = list()
     N = edge_index.max().item() + 1
@@ -78,12 +86,19 @@ def khop_graphs_sparse(x, edge_index, k,name,device,features=True):
             indices = A_tilde_k.coalesce().indices().to(device)
             indices = indices[:, similarity[indices[0], indices[1]] >= similarity.mean()]
             # Select only the initial number of edges
-            if indices.size(1) > edge_index.size(1):
-                indices = indices[:, :edge_index.size(1)]
+            if regular == False:
+                if indices.size(1) > edge_index.size(1):
+                    # We select the edges with the highest similarity
+                    indices = indices[:, similarity[indices[0], indices[1]].argsort(descending=True)[:edge_index.size(1)]]       
             print("After pruning: ", indices.size(1))
             hops.append(indices.clone())
+
             #A_tilde_k = torch.sparse_coo_tensor(indices, torch.ones(indices.size(1)), (N, N)).to(device)
     #    attributes.append(A_tilde_k.clone().coalesce().values().to(device))
+    # Nos guardamos la lista de hops
+    import pickle
+    with open('hops_'+name+'.pkl', 'wb') as f:
+        pickle.dump(hops, f)
     return hops#, attributes        
         
     
@@ -125,3 +140,15 @@ def test(data,model,test_mask):
     test_correct = pred[test_mask] == data.y[test_mask]
     acc = int(test_correct.sum()) / int(test_mask.sum())
     return acc
+def rand_train_test_idx(label,seed, train_prop=.5, valid_prop=.25, ignore_negative=True):
+      
+      """ randomly splits label into train/valid/test splits """
+      train_idx, test_idx = train_test_split(np.arange(len(label)), train_size=train_prop, random_state=seed)
+      val_idx, test_idx = train_test_split(test_idx, train_size=train_prop, random_state=seed)
+      train_mask = torch.zeros(len(label), dtype=torch.bool)
+      train_mask[train_idx] = True
+      val_mask = torch.zeros(len(label), dtype=torch.bool)
+      val_mask[val_idx] = True
+      test_mask = torch.zeros(len(label), dtype=torch.bool)
+      test_mask[test_idx] = True
+      return train_mask, val_mask, test_mask
