@@ -28,7 +28,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--cuda",
-    default="cuda:0",
+    default="cpu",
     choices=["cuda:0","cuda:1","cpu"],
     help="You can choose between cuda:0, cuda:1, cpu",
 )
@@ -51,10 +51,12 @@ parser.add_argument(
         "--n_layers", type=int, default=7, help="Number of hops"
     )
 parser.add_argument(
-        "--hops", type=int, default=4, help="Number of centers"
+        "--hops", type=int, default=2, help="Number of centers"
 )
 args = parser.parse_args()
 ################### Importing the dataset ###################################
+import torch_geometric.transforms as T
+#transform = T.Compose([T.NormalizeFeatures()])
 if args.dataset == "penn94":
     dataset = LINKXDataset(root='./data',name='penn94')
     data = dataset[0]
@@ -68,7 +70,9 @@ elif args.dataset == "genius":
     data = genius()
 elif args.dataset == "twitch-gamer":
     data = twitch_gamer()
-
+#data = transform(data)
+print(data)
+# Now we apply the transformation
 init_edge_index = data.edge_index.clone()
 print("Computing the graphs...")
 G_l = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,"cpu",features=True)
@@ -117,7 +121,7 @@ for i in range(5):
                     hidden_channels=args.hidden_channels,
                     out_channels=data.y.max().item()+1,
                     num_layers=args.hops,
-                    dropout=args.dropout).to(device)
+                    dropout=args.dropout,seed = i).to(device)
     criterion = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     test_acc = 0

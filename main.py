@@ -74,8 +74,8 @@ elif args.dataset == "squirrel":
     dataset = WikipediaNetwork(root='./data',name='squirrel',transform=transform)
     data = dataset[0]    
 elif args.dataset == "chamaleon":
-#    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = WikipediaNetwork(root='./data',name='chameleon')#,transform=transform)
+    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    dataset = WikipediaNetwork(root='./data',name='chameleon',transform=transform)
     data = dataset[0]
 elif args.dataset == "cora":
 #    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
@@ -137,7 +137,7 @@ for i in range(10):
         acc_test = test(data,model,test_mask)
         if acc_test > test_acc:
             test_acc = acc_test
-        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
+        #print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
         if test_acc > acc_test:
             patience += 1
         else:

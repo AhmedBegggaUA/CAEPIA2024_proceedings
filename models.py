@@ -4,13 +4,12 @@ from torch_geometric.nn import GCNConv, GraphConv
 from torch.nn import Linear
 import torch.nn.functional as F
 import torch.nn as nn
-from torch_geometric.seed import seed_everything as th_seed
-th_seed(12345)
+
 class MO_GNN_large(torch.nn.Module):
     def __init__(self, in_channels,hidden_channels, out_channels,num_layers,dropout=0.2,seed=12345):
         super(MO_GNN_large, self).__init__()
         # seed
-        torch.manual_seed(12345)
+        torch.manual_seed(seed)
         # Create the layers
         self.MLP = torch.nn.Linear(in_channels,hidden_channels)
         self.MLP2 = torch.nn.Linear(hidden_channels,hidden_channels)
