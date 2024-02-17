@@ -15,6 +15,7 @@ from torch_geometric.seed import seed_everything as th_seed
 from models import *
 from utils import *
 from dataset_large import *
+from sklearn.model_selection import train_test_split
 import warnings
 warnings.filterwarnings("ignore")
 th_seed(12345)
@@ -28,7 +29,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--cuda",
-    default="cuda:0",
+    default="cpu",
     choices=["cuda:0","cuda:1","cpu"],
     help="You can choose between cuda:0, cuda:1, cpu",
 )
@@ -51,10 +52,12 @@ parser.add_argument(
         "--n_layers", type=int, default=7, help="Number of hops"
     )
 parser.add_argument(
-        "--hops", type=int, default=4, help="Number of centers"
+        "--hops", type=int, default=2, help="Number of centers"
 )
 args = parser.parse_args()
 ################### Importing the dataset ###################################
+import torch_geometric.transforms as T
+#transform = T.Compose([T.NormalizeFeatures()])
 if args.dataset == "penn94":
     dataset = LINKXDataset(root='./data',name='penn94')
     data = dataset[0]
@@ -68,7 +71,9 @@ elif args.dataset == "genius":
     data = genius()
 elif args.dataset == "twitch-gamer":
     data = twitch_gamer()
-
+#data = transform(data)
+print(data)
+# Now we apply the transformation
 init_edge_index = data.edge_index.clone()
 print("Computing the graphs...")
 G_l = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,"cpu",features=True)
@@ -94,30 +99,36 @@ data = data.to(device)
 print("Device: ",device)
 ################### Training the model in a supervised way ###################################
 results = []
+seeds = [12381, 45891, 63012, 32612, 91738]
 for i in range(5):
+    th_seed(i)
     if args.dataset != "penn94":
-        # Split the data in 50% train, 25% validation and 25% test
-        train_mask = torch.zeros(data.x.shape[0], dtype=torch.bool)
-        val_mask = torch.zeros(data.x.shape[0], dtype=torch.bool)
-        test_mask = torch.zeros(data.x.shape[0], dtype=torch.bool)
-        train_mask[:int(data.x.shape[0]*0.5)] = True
-        val_mask[int(data.x.shape[0]*0.5):int(data.x.shape[0]*0.75)] = True
-        test_mask[int(data.x.shape[0]*0.75):] = True
+        train_idx, test_idx = train_test_split(np.arange(data.y.shape[0]), train_size=.5, random_state=i)
+        val_idx, test_idx = train_test_split(test_idx, train_size=.5, random_state=i)
+        train_mask = torch.zeros(data.y.shape[0], dtype=torch.bool)
+        train_mask[train_idx] = True
+        val_mask = torch.zeros(data.y.shape[0], dtype=torch.bool)
+        val_mask[val_idx] = True
+        test_mask = torch.zeros(data.y.shape[0], dtype=torch.bool)
+        test_mask[test_idx] = True
     else:
         train_mask = data.train_mask[:,i]
         val_mask = data.val_mask[:,i]
         test_mask = data.test_mask[:,i]
     train_mask = train_mask.to(device)
     val_mask = val_mask.to(device)
-    test_mask = test_mask.to(device)                                                
+    test_mask = test_mask.to(device)         
+    print("Shape of the train mask: ",train_mask.shape)
+    print("Shape of the val mask: ",val_mask.shape)
+    print("Shape of the test mask: ",test_mask.shape)                                       
     print('===========================================================================================================')
     print('Split: ',i)
     print('===========================================================================================================')
-    model = MO_GNN_large(in_channels=data.x.shape[1],
+    model = MO_GNN_large_xl(in_channels=data.x.shape[1],
                     hidden_channels=args.hidden_channels,
                     out_channels=data.y.max().item()+1,
                     num_layers=args.hops,
-                    dropout=args.dropout).to(device)
+                    dropout=args.dropout,seed = i).to(device)
     criterion = torch.nn.NLLLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
     test_acc = 0
