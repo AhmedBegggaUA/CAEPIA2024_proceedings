@@ -96,7 +96,8 @@ class MO_GNN_large_xl(torch.nn.Module):
         # GCNConv over the n hops of graph
         embeddings = list()
         for i, conv in enumerate(self.convs):
-            tmp_embedding = conv(x, edge_indexes[i]).relu() * mask[i]
+            tmp_embedding = conv(x, edge_indexes[i])
+            tmp_embedding = self.bn[i](tmp_embedding).relu() * mask[i]
             embeddings.append(tmp_embedding.unsqueeze(0))
         # MLP over the features of the graph
         x = self.MLP(x).relu()

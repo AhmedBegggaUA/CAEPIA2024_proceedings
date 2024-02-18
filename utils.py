@@ -40,9 +40,9 @@ def khops_graphs_sampler(x, edge_index, k,device,features=True):
 
 def khop_graphs_sparse(x, edge_index, k,name,device,features=True, regular=False):
     # Comprobamos si ya existe el fichero
-    if os.path.isfile('hops_'+name+'.pkl'):
+    if os.path.isfile('./data/hops_'+name+'.pkl'):
         import pickle
-        with open('hops_'+name+'.pkl', 'rb') as f:
+        with open('./data/hops_'+name+'.pkl', 'rb') as f:
             hops = pickle.load(f)
         return hops
     similarity = torch.cdist(x, x, p=2)
@@ -97,7 +97,7 @@ def khop_graphs_sparse(x, edge_index, k,name,device,features=True, regular=False
     #    attributes.append(A_tilde_k.clone().coalesce().values().to(device))
     # Nos guardamos la lista de hops
     import pickle
-    with open('hops_'+name+'.pkl', 'wb') as f:
+    with open('./data/hops_'+name+'.pkl', 'wb') as f:
         pickle.dump(hops, f)
     return hops#, attributes        
         

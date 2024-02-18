@@ -74,7 +74,7 @@ elif args.dataset == "squirrel":
     dataset = WikipediaNetwork(root='./data',name='squirrel',transform=transform)
     data = dataset[0]    
 elif args.dataset == "chamaleon":
-    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
+    transform = T.Compose([T.ToUndirected()])#, T.ToUndirected()])
     dataset = WikipediaNetwork(root='./data',name='chameleon',transform=transform)
     data = dataset[0]
 elif args.dataset == "cora":
@@ -90,7 +90,7 @@ elif args.dataset == "pubmed":
     dataset = Planetoid(root='./data',name='pubmed')#,transform=transform)
     data = dataset[0]
 init_edge_index = data.edge_index.clone()
-hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,regular=True)
+hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,regular=False)
 hops.append(init_edge_index)
 #attr.append(torch.ones(init_edge_index.shape[1]).to(args.cuda))
 print("Done!")
@@ -122,7 +122,7 @@ for i in range(10):
     print('===========================================================================================================')
     print('Split: ',i)
     print('===========================================================================================================')
-    model = MO_GNN_large(in_channels=data.x.shape[1],
+    model = MO_GNN_large_xl(in_channels=data.x.shape[1],
                     hidden_channels=args.hidden_channels,
                     out_channels=data.y.max().item()+1,
                     num_layers=args.hops,
@@ -137,7 +137,7 @@ for i in range(10):
         acc_test = test(data,model,test_mask)
         if acc_test > test_acc:
             test_acc = acc_test
-        #print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
+        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
         if test_acc > acc_test:
             patience += 1
         else:
