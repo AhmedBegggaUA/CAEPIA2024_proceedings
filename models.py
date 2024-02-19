@@ -1,6 +1,6 @@
 import torch
 # Now let's create a model
-from torch_geometric.nn import GCNConv, GraphConv
+from torch_geometric.nn import GCNConv
 from torch.nn import Linear
 import torch.nn.functional as F
 import torch.nn as nn
@@ -22,7 +22,7 @@ class MO_GNN_large(torch.nn.Module):
         add_self_loops = True
         save_mem  = False
         self.bn = torch.nn.ModuleList()
-        for i in range(num_layers):
+        for _ in range(num_layers):
             self.convs.append(GCNConv(in_channels, hidden_channels, cached=cached, normalize=not save_mem, add_self_loops=add_self_loops))
             self.bn.append(torch.nn.BatchNorm1d(hidden_channels))
         # Final layer
@@ -33,7 +33,7 @@ class MO_GNN_large(torch.nn.Module):
         self.sm = nn.Softmax(dim=0)
         # Dropout
         self.dropout = dropout
-    def forward(self, x, edge_indexes, edge_attrs):
+    def forward(self, x, edge_indexes):
         mask = self.sm(self.att)
         # GCNConv over the original graph
         extra_conv = self.init_conv(x, edge_indexes[-1]).relu()
@@ -85,7 +85,7 @@ class MO_GNN_large_xl(torch.nn.Module):
         self.sm = nn.Softmax(dim=0)
         # Dropout
         self.dropout = dropout
-    def forward(self, x, edge_indexes, edge_attrs):
+    def forward(self, x, edge_indexes):
         mask = self.sm(self.att)
         # GCNConv over the original graph
         extra_conv = self.init_conv(x, edge_indexes[-1])
@@ -113,4 +113,5 @@ class MO_GNN_large_xl(torch.nn.Module):
         final_embedding = final_embedding.sum(dim=0)
         z = F.dropout(final_embedding, p=self.dropout, training=self.training)
         z = self.fc1(z).log_softmax(dim=-1)
+        self.embedding = final_embedding.clone()
         return z

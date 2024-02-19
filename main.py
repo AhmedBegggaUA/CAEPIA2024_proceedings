@@ -3,20 +3,15 @@ import os
 import torch
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
 import time
 from torch_geometric.datasets import Planetoid,WebKB,Actor,WikipediaNetwork, LINKXDataset
-from torch_geometric.utils import to_dense_adj
+from torch_geometric.nn.models import MLP
 from torch_geometric.transforms import *
 import torch_geometric.transforms as T
-from torch_geometric.seed import seed_everything as th_seed
 from models import *
 from utils import *
 import warnings
 warnings.filterwarnings("ignore")
-th_seed(12345)
 ################### Arguments parameters ###################################
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -52,50 +47,32 @@ parser.add_argument(
 args = parser.parse_args()
 args.cuda = 'cpu' if not torch.cuda.is_available() else 'cuda:0'
 ################### Importing the dataset ###################################
-if args.dataset == "texas":
+if args.dataset in ["wisconsin","cornell","texas"]:
     transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = WebKB(root='./data',name='texas')#,transform=transform)
-    data = dataset[0]
-elif args.dataset == "wisconsin":
-    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = WebKB(root='./data',name='wisconsin',transform=transform)
+    dataset = WebKB(root='./data',name=args.dataset,transform=transform)
     data = dataset[0]
 elif args.dataset == "actor":
     transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
     dataset  = Actor(root='./data', transform=transform)
     dataset.name = "film"
     data = dataset[0]
-elif args.dataset == "cornell":
-    transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = WebKB(root='./data',name='cornell',transform=transform)
-    data = dataset[0]
-elif args.dataset == "squirrel":
+elif args.dataset in ["squirrel","chamaleon"]:
     transform = T.Compose([T.ToUndirected()])
-    dataset = WikipediaNetwork(root='./data',name='squirrel',transform=transform)
+    dataset = WikipediaNetwork(root='./data',name=args.dataset,transform=transform)
     data = dataset[0]    
-elif args.dataset == "chamaleon":
-    transform = T.Compose([T.ToUndirected()])#, T.ToUndirected()])
-    dataset = WikipediaNetwork(root='./data',name='chameleon',transform=transform)
-    data = dataset[0]
-elif args.dataset == "cora":
+elif args.dataset in ["pubmed","cora","citeseer"]:
     transform = T.Compose([T.ToUndirected()])
-    dataset = Planetoid(root='./data',name='cora')#,transform=transform)
-    data = dataset[0]
-elif args.dataset == "citeseer":
-    #transform = T.Compose([T.NormalizeFeatures(), T.ToUndirected()])
-    dataset = Planetoid(root='./data',name='citeseer')#,transform=transform)
-    data = dataset[0]
-elif args.dataset == "pubmed":
-    transform = T.Compose([T.ToUndirected()])
-    dataset = Planetoid(root='./data',name='pubmed',transform=transform)
+    dataset = Planetoid(root='./data',name=args.dataset)
     data = dataset[0]
 init_edge_index = data.edge_index.clone()
-hops = khop_graphs_sparse(data.x,data.edge_index, args.hops,args.dataset,args.cuda,regular=False)
+hops = khop_graphs_sparse(data.x,
+                          data.edge_index,
+                            args.hops,
+                            args.dataset,
+                            args.cuda)
 hops.append(init_edge_index)
-#attr.append(torch.ones(init_edge_index.shape[1]).to(args.cuda))
 print("Done!")
 data.edge_index = hops
-#data.edge_attr = attr
 print()
 print(f'Dataset: {dataset}:')
 print('======================')
@@ -122,7 +99,14 @@ for i in range(10):
     print('===========================================================================================================')
     print('Split: ',i)
     print('===========================================================================================================')
-    model = MO_GNN_large_xl(in_channels=data.x.shape[1],
+    if args.dataset in ["chamaleon","squirrel","actor"]:
+        model = MO_GNN_large_xl(in_channels=data.x.shape[1],
+                        hidden_channels=args.hidden_channels,
+                        out_channels=data.y.max().item()+1,
+                        num_layers=args.hops,
+                        dropout=args.dropout,seed=i).to(device)
+    else:
+        model = MO_GNN_large(in_channels=data.x.shape[1],
                     hidden_channels=args.hidden_channels,
                     out_channels=data.y.max().item()+1,
                     num_layers=args.hops,
@@ -135,9 +119,9 @@ for i in range(10):
         loss,acc_train = train(data,model,train_mask,optimizer,criterion)
         acc_val = test(data,model,val_mask)
         acc_test = test(data,model,test_mask)
+        print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
         if acc_test > test_acc:
             test_acc = acc_test
-        #print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}, Train Acc: {acc_train:.4f}, Val Acc: {acc_val:.4f}, Test Acc: {acc_test:.4f}')
         if test_acc > acc_test:
             patience += 1
         else:
